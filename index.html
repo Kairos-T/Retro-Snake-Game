@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<body style="text-align: center; font-family:Arial">
+
+<h1>
+  Retro Snake Game
+</h1>
+
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+
+<h2 id="scoreBoard">
+  Score = 0
+</h2>
+
+  Start Game by moving snake using Arrow Keys.
+  <br>
+  Do not hit the wall!
+
+<script>
+// 1. Variables
+var snakeX = 200; 
+var snakeY = 200;
+var ratX = 300;
+var ratY = 300;
+var msg = "Press any arrow key to start!";
+var msgPrevScore = "";
+var moveX = 0; 
+var moveY = 0;
+var loopid = null;
+var frameInterval = 200;
+var score = 0;
+var trail=[];
+var snakeLength = 5;
+var winSound = new sound("https://icode2019posbchallenge.files.wordpress.com/2021/08/score.wav");
+var loseSound = new sound("https://icode2019posbchallenge.files.wordpress.com/2021/08/dead.wav");
+var intervalChange = 10;
+
+// 2. On Load
+window.onload=function() {
+  // Define Canvas
+  canvas = document.getElementById("gameCanvas");
+  ctx = canvas.getContext("2d");
+  
+  // Add Keypress Listener
+  document.addEventListener("keydown", keyPress);
+
+  // Start Game
+  startGame();
+}
+
+// 3. Start Game
+function startGame(){
+  loopid = setInterval(frame,frameInterval);
+}
+
+// 4. Frame
+function frame() {
+  ////////////
+  // Change //
+  ////////////
+
+  snakeX = snakeX + moveX;
+  snakeY = snakeY + moveY;
+
+  // hit border?
+  checkHitBorder();
+
+  //bit Itsef?
+  checkBitSelf();
+
+  // Snake caught rat?
+  checkCaughtRat();
+
+  ////////////
+  // Render //
+  ////////////
+
+  // Clear
+  drawRect(0, 0, canvas.width, canvas.height, "black")
+  
+  // show message at start of game
+  if ((moveX == 0) && (moveY == 0)){
+    drawText(msg, 80,100);
+    drawText(msgPrevScore, 20,380);
+  }
+
+  // draw snake
+  drawSnake();
+ 
+  // draw rat
+  drawRat();
+}
+
+// 5. Draw Text
+function drawText(text, x, y){
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText(text, x, y);
+}
+
+// 6. Draw Rect
+function drawRect(x, y, width, height, colour){
+  ctx.fillStyle = colour;
+  ctx.fillRect(x, y, width, height);
+}
+
+// 7. Draw Snake
+function drawSnake(){
+  //add position of new head of snake trail
+  trail.push({x:snakeX, y:snakeY});
+
+  //remove trail at end of tail 
+  if (trail.length > snakeLength) {
+    trail.shift();
+  }
+
+  //draw snake
+  for(var i = 0; i < trail.length; i++) {
+    drawRect(trail[i].x, trail[i].y, 18, 18, "lime")
+  }
+}
+
+// 8. Draw Rat
+function drawRat(){
+  drawRect(ratX, ratY, 18, 18, "red")
+}
+
+// 9. Get Random
+function getRandom(num){
+  // Returns a random integer from 0 to num*20
+  return (Math.floor(Math.random() * num) * 20);
+}
+
+// 10. Move Rat
+function moveRat(){
+  ratX=getRandom(20);
+  ratY=getRandom(20);
+}
+
+// 11. Check Hit Border
+function checkHitBorder(){
+  if((snakeX < 0) || (snakeX > canvas.width - 20) || (snakeY < 0) || (snakeY > canvas.height -20)) {
+    lose();
+  }
+}
+
+// 12. Check Caught Rat
+function checkCaughtRat(){
+
+  if(ratX==snakeX && ratY==snakeY) {
+
+    //play win sound
+    winSound.play();
+
+    //Add length
+    snakeLength++;
+
+    // Add to Score & Display score
+    score++;
+    document.getElementById("scoreBoard").innerHTML = "Score : " + score;
+
+    // Increase game speed
+    if (frameInterval >= 80){
+      frameInterval = frameInterval - intervalChange;
+      changeSpeed();
+    }
+    
+    // Move rat
+    moveRat();
+  }
+}
+
+// 13. Lose
+function lose(){
+
+  //play lose sound
+  loseSound.play();
+
+  // record previous Score
+  msgPrevScore = "Your score was " + score;
+
+  // reset
+  snakeX = 200; 
+  snakeY = 200;
+  ratX = 300;
+  ratY = 300;
+  moveX = 0;
+  moveY = 0;
+  score = 0;
+  trail=[];
+  snakeLength = 5;  
+  frameInterval = 200;
+
+  // Change speed back to 200
+  changeSpeed();
+
+  //Reset Score to 0
+  document.getElementById("scoreBoard").innerHTML = "Score : " + score ;
+}
+
+// 14. Key Press
+function keyPress(evt) {
+  switch(evt.keyCode) {
+    case 37:
+      // Left
+      moveX = -20;
+      moveY = 0;
+      break;
+    case 39:
+      // Right
+      moveX = 20;
+      moveY = 0;
+      break;
+    case 38:
+      // Up
+      moveX = 0;
+      moveY = -20;
+      break;
+    case 40:
+      // Down
+      moveX = 0;
+      moveY = 20;
+      break;
+  }
+}
+
+// 15. Sound Function
+function sound(src) {
+  this.sound = document.createElement("audio");
+  this.sound.src = src;
+  this.sound.setAttribute("preload", "auto");
+  this.sound.setAttribute("controls", "none");
+  this.sound.style.display = "none";
+  document.body.appendChild(this.sound);
+  this.play = function(){
+    this.sound.play();
+  }
+  this.stop = function(){
+    this.sound.pause();
+  }  
+}
+
+// 16. Change Speed 
+function changeSpeed(){
+  clearInterval(loopid);
+  loopid = setInterval(frame, frameInterval);
+}
+
+// 17. Check Bit Self (Challenge)
+function checkBitSelf(){
+  for(var i = 0; i < trail.length; i++) {
+    if((trail[i].x == snakeX && trail[i].y == snakeY) && !(moveX == 0 && moveY == 0)) {
+       lose();
+    }
+  }
+}
+
+</script>
+
+</body>
+</html>
